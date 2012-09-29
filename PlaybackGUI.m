@@ -177,16 +177,28 @@ function timer_Callback(obj, event, hObject)
 % Load global values.
 handles = guidata(hObject);
 if handles.playing
-    handles.currentFrame = handles.currentFrame + 1;
-    if handles.currentFrame >= size(handles.minorFrames, 1)
-        handles.currentFrame = size(handles.minorFrames, 1);
+    gotoFrame(hObject, handles.currentFrame + 1);
+    handles = guidata(hObject);
+    if handles.currentFrame == size(handles.minorFrames, 1)
         handles.playing = 0;
     end
-    guidata(hObject, handles);
-    updateOpenRAVE(hObject);
 end
 guidata(hObject, handles);
 
+% --- The function that calls the function makes the animation
+function gotoFrame(hObject, frameNumber)
+handles = guidata(hObject);
+if frameNumber < 1
+    frameNumber = 1;
+elseif frameNumber > size(handles.minorFrames, 1)
+    frameNumber = size(handles.minorFrames, 1);
+end
+handles.currentFrame = frameNumber;
+% Update frame text display
+set(handles.MinorFrame,'String',num2str(handles.currentFrame));
+set(handles.MajorFrame,'String',num2str(floor(handles.currentFrame/10)));
+guidata(hObject, handles);
+updateOpenRAVE(hObject);
 
 % --- The function that makes the animation
 function [handles] = updateOpenRAVE(hObject)
@@ -194,9 +206,6 @@ handles = guidata(hObject);
 % Update OpenRAVE model
 angles = handles.minorFrames(handles.currentFrame,:).*pi/180;
 orBodySetJointValues(handles.robotID,angles,handles.joints);
-% Update frame text display
-set(handles.MinorFrame,'String',num2str(handles.currentFrame));
-set(handles.MajorFrame,'String',num2str(floor(handles.currentFrame/10)));
 guidata(hObject, handles);
 
 %%
@@ -205,6 +214,14 @@ function GoTo_Callback(hObject, eventdata, handles)
 % hObject    handle to GoTo (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+frame = str2num(get(handles.MajorFrame,'String'));
+if numel(frame) == 0
+    msgbox('Not recognized as a number.')
+    set(handles.MajorFrame,'String',num2str(floor(handles.currentFrame/10)));
+    guidata(hObject,handles);
+    return
+end
+gotoFrame(hObject,frame*10)
 
 
 function MajorFrame_Callback(hObject, eventdata, handles)
@@ -260,12 +277,14 @@ function PrevMajorFrame_Callback(hObject, eventdata, handles)
 % hObject    handle to PrevMajorFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+gotoFrame(hObject, 10*floor(handles.currentFrame/10 - 1));
 
 % --- Executes on button press in PrevMinorFrame.
 function PrevMinorFrame_Callback(hObject, eventdata, handles)
 % hObject    handle to PrevMinorFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+gotoFrame(hObject, handles.currentFrame - 1);
 
 % --- Executes on button press in PlayPause.
 function PlayPause_Callback(hObject, eventdata, handles)
@@ -280,12 +299,17 @@ function NextMinorFrame_Callback(hObject, eventdata, handles)
 % hObject    handle to NextMinorFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+gotoFrame(hObject, handles.currentFrame + 1);
 
 % --- Executes on button press in NextMajorFrame.
 function NextMajorFrame_Callback(hObject, eventdata, handles)
 % hObject    handle to NextMajorFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+gotoFrame(hObject, 10*floor(handles.currentFrame/10 + 1));
+
+
+
 
 %%
 function FrameA_Callback(hObject, eventdata, handles)
