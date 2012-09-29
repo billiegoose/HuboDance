@@ -22,7 +22,7 @@ function varargout = PlaybackGUI(varargin)
 
 % Edit the above text to modify the response to help PlaybackGUI
 
-% Last Modified by GUIDE v2.5 28-Sep-2012 22:52:53
+% Last Modified by GUIDE v2.5 29-Sep-2012 00:06:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,16 +60,27 @@ handles.output = hObject;
 handles.joints = [ 5, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,  9, 10, 11, 12, 16, 17, 18, 19];
 
 % Load robotid and data if possible
-if evalin('base','exist(''RobotId'',''var'')')
-    handles.RobotId = evalin('base','RobotId');
+if evalin('base','exist(''robotID'',''var'')')
+    handles.robotID = evalin('base','robotID');
 end
 
-if evalin('base','exist(''MajorFrames'',''var'')')
-    handles.MajorFrames = evalin('base','MajorFrames');
+if evalin('base','exist(''majorFrames'',''var'')')
+    handles.majorFrames = evalin('base','majorFrames');
+    handles = generateMinorFrames(handles);
 end
+
+handles.playing = 0;
+handles.currentFrame = 1;
+
+% Creat animation timer.
+handles.timer1 = timer('TimerFcn', {@timer_Callback,hObject}, ...
+            'ExecutionMode', 'fixedSpacing', ...
+            'Period', .01);
 
 % Update handles structure
 guidata(hObject, handles);
+
+start(handles.timer1);
 
 % UIWAIT makes PlaybackGUI wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -91,19 +102,19 @@ function LoadRobot_Callback(hObject, eventdata, handles)
 % hObject    handle to LoadRobot (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if evalin('base','exist(''robotid'',''var'')')
-    evalin('base','orBodyDestroy(robotid)')
+if evalin('base','exist(''robotID'',''var'')')
+    evalin('base','orBodyDestroy(robotID)')
 end
 robot_file = get(handles.RobotFile,'String');
-handles.robotid = orEnvCreateRobot('Hubo',robot_file);
-assignin('base','robotid',handles.robotid)
+handles.robotID = orEnvCreateRobot('Hubo',robot_file);
+assignin('base','robotID',handles.robotID)
 % Curl fingers
 curl_angle = 0.8;
 for i=[35:46 50:61]
-    orBodySetJointValues(handles.robotid,curl_angle,i)
+    orBodySetJointValues(handles.robotID,curl_angle,i)
 end
 for i=[47:49 62:64]
-    orBodySetJointValues(handles.robotid,-curl_angle,i)
+    orBodySetJointValues(handles.robotID,-curl_angle,i)
 end
 guidata(hObject,handles);
 
@@ -127,21 +138,24 @@ function LoadDance_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 dance_file = get(handles.DanceFile, 'String');
-handles.MajorFrames = load(dance_file);
+handles.majorFrames = load(dance_file);
 % Save to workspace
-assignin('base','MajorFrames',handles.MajorFrames)
+assignin('base','majorFrames',handles.majorFrames)
+handles = generateMinorFrames(handles);
+guidata(hObject,handles);
+
+function [handles] = generateMinorFrames(handles)
 % Smooth data
-temp = handles.MajorFrames;
+temp = handles.majorFrames;
 for i=1:numel(handles.joints)
     temp(:,i) = smooth(temp(:,i));
 end
 % Upsample from 10Hz to 100Hz.
-handles.MinorFrames = interp1(temp,1:0.1:size(temp,1));
+handles.minorFrames = interp1(temp,1:0.1:size(temp,1));
 % Save upsampled data
-dlmwrite('3_Upsampled.txt',handles.MinorFrames,'delimiter','\t');
+dlmwrite('3_Upsampled.txt',handles.minorFrames,'delimiter','\t');
 % Convert to Hubo form and save.
 ConvertJaemiToHuboPlus('3_Upsampled.txt');
-guidata(hObject,handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -155,6 +169,35 @@ function DanceFile_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+%%
+% --- The function that makes the animation
+function timer_Callback(obj, event, hObject)
+%disp(handles)
+% Load global values.
+handles = guidata(hObject);
+if handles.playing
+    handles.currentFrame = handles.currentFrame + 1;
+    if handles.currentFrame >= size(handles.minorFrames, 1)
+        handles.currentFrame = size(handles.minorFrames, 1);
+        handles.playing = 0;
+    end
+    guidata(hObject, handles);
+    updateOpenRAVE(hObject);
+end
+guidata(hObject, handles);
+
+
+% --- The function that makes the animation
+function [handles] = updateOpenRAVE(hObject)
+handles = guidata(hObject);
+% Update OpenRAVE model
+angles = handles.minorFrames(handles.currentFrame,:).*pi/180;
+orBodySetJointValues(handles.robotID,angles,handles.joints);
+% Update frame text display
+set(handles.MinorFrame,'String',num2str(handles.currentFrame));
+set(handles.MajorFrame,'String',num2str(floor(handles.currentFrame/10)));
+guidata(hObject, handles);
 
 %%
 % --- Executes on button press in GoTo.
@@ -229,6 +272,8 @@ function PlayPause_Callback(hObject, eventdata, handles)
 % hObject    handle to PlayPause (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+handles.playing = ~handles.playing;
+guidata(hObject,handles);
 
 % --- Executes on button press in NextMinorFrame.
 function NextMinorFrame_Callback(hObject, eventdata, handles)
@@ -847,3 +892,13 @@ function Interpolate_Callback(hObject, eventdata, handles)
 % hObject    handle to Interpolate (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+delete(timerfindall());
+% Hint: delete(hObject) closes the figure
+delete(hObject);
