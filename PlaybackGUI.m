@@ -159,8 +159,8 @@ function LoadDance_Callback(hObject, eventdata, handles)
 % hObject    handle to LoadDance (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-dance_file = get(handles.DanceFile, 'String');
-handles.majorFrames = load(dance_file);
+handles.danceFile = get(handles.DanceFile, 'String');
+handles.majorFrames = load(handles.danceFile);
 % Save to workspace
 assignin('base','majorFrames',handles.majorFrames)
 handles = generateMinorFrames(handles);
@@ -175,9 +175,19 @@ end
 % Upsample from 10Hz to 100Hz.
 handles.minorFrames = interp1(temp,1:0.1:size(temp,1));
 % Save upsampled data
-dlmwrite('3_Upsampled.txt',handles.minorFrames,'delimiter','\t');
+if hasfield(handles,'danceFile')
+    % Get the filename from the most recently loaded dance file.
+    [pathstr, name, ext] = fileparts(handles.danceFile);
+    upsampledFile = [pathstr filesep name '_100Hz' ext];
+else
+    % If minorFrames was loaded from the workspace, then DO NOT use the
+    % filename from the GUI field, because that might be set at some
+    % default, and they might not expect that file to get overwritten.
+    upsampledFile = 'Upsampled.txt';
+end
+dlmwrite(upsampledFile,handles.minorFrames,'delimiter','\t');
 % Convert to Hubo form and save.
-ConvertJaemiToHuboPlus('3_Upsampled.txt');
+ConvertJaemiToHuboPlus(upsampledFile);
 
 
 % --- Executes during object creation, after setting all properties.
