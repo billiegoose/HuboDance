@@ -1,6 +1,5 @@
 function ConvertJaemiToHuboPlus(inputFile)
-[pathstr, name, ext] = fileparts(inputFile);
-outputFile = [pathstr filesep name '_HuboPlus' ext];
+outputFile = AppendToFileName(inputFile, '_HuboPlus');
 
 % Array :  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21
 % Joints: WST LHY LHR LHP LKN LAP LAR RHY RHR RHP RKN RAP RAR LSP LSR LSY LEB RSP RSR RSY REB

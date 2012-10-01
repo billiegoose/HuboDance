@@ -177,8 +177,7 @@ handles.minorFrames = interp1(temp,1:0.1:size(temp,1));
 % Save upsampled data
 if hasfield(handles,'danceFile')
     % Get the filename from the most recently loaded dance file.
-    [pathstr, name, ext] = fileparts(handles.danceFile);
-    upsampledFile = [pathstr filesep name '_100Hz' ext];
+    upsampledFile = AppendToFileName(handles.danceFile, '_100Hz');
 else
     % If minorFrames was loaded from the workspace, then DO NOT use the
     % filename from the GUI field, because that might be set at some
