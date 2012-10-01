@@ -22,7 +22,7 @@ function varargout = PlaybackGUI(varargin)
 
 % Edit the above text to modify the response to help PlaybackGUI
 
-% Last Modified by GUIDE v2.5 29-Sep-2012 00:06:09
+% Last Modified by GUIDE v2.5 30-Sep-2012 11:40:01
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,9 +55,31 @@ function PlaybackGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for PlaybackGUI
 handles.output = hObject;
 
-% Array :  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21
-% Joints: WST LHY LHR LHP LKN LAP LAR RHY RHR RHP RKN RAP RAR LSP LSR LSY LEB RSP RSR RSY REB
-handles.joints = [ 5, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,  9, 10, 11, 12, 16, 17, 18, 19];
+% Joint information.
+handles.namesJoints = {'WST' 'LHY' 'LHR' 'LHP' 'LKN' 'LAP' 'LAR' 'RHY' 'RHR' 'RHP' 'RKN' 'RAP' 'RAR' 'LSP' 'LSR' 'LSY' 'LEB' 'RSP' 'RSR' 'RSY' 'REB'};
+handles.arenaJoints.all    = [ 1, 2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+handles.openRaveJoints.all = [ 5, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,  9, 10, 11, 12, 16, 17, 18, 19];
+handles.arenaJoints.WST = 1;  handles.openRaveJoints.WST = 5;
+handles.arenaJoints.LHY = 2;  handles.openRaveJoints.LHY = 23;
+handles.arenaJoints.LHR = 3;  handles.openRaveJoints.LHR = 24;
+handles.arenaJoints.LHP = 4;  handles.openRaveJoints.LHP = 25;
+handles.arenaJoints.LKN = 5;  handles.openRaveJoints.LKN = 26;
+handles.arenaJoints.LAP = 6;  handles.openRaveJoints.LAP = 27;
+handles.arenaJoints.LAR = 7;  handles.openRaveJoints.LAR = 28;
+handles.arenaJoints.RHY = 8;  handles.openRaveJoints.RHY = 29;
+handles.arenaJoints.RHR = 9;  handles.openRaveJoints.RHR = 30;
+handles.arenaJoints.RHP = 10; handles.openRaveJoints.RHP = 31;
+handles.arenaJoints.RKN = 11; handles.openRaveJoints.RKN = 32;
+handles.arenaJoints.RAP = 12; handles.openRaveJoints.RAP = 33;
+handles.arenaJoints.RAR = 13; handles.openRaveJoints.RAR = 34;
+handles.arenaJoints.LSP = 14; handles.openRaveJoints.LSP = 9;
+handles.arenaJoints.LSR = 15; handles.openRaveJoints.LSR = 10;
+handles.arenaJoints.LSY = 16; handles.openRaveJoints.LSY = 11;
+handles.arenaJoints.LEB = 17; handles.openRaveJoints.LEB = 12;
+handles.arenaJoints.RSP = 18; handles.openRaveJoints.RSP = 16;
+handles.arenaJoints.RSR = 19; handles.openRaveJoints.RSR = 17;
+handles.arenaJoints.RSY = 20; handles.openRaveJoints.RSY = 18;
+handles.arenaJoints.REB = 21; handles.openRaveJoints.REB = 19;
 
 % Load robotid and data if possible
 if evalin('base','exist(''robotID'',''var'')')
@@ -147,7 +169,7 @@ guidata(hObject,handles);
 function [handles] = generateMinorFrames(handles)
 % Smooth data
 temp = handles.majorFrames;
-for i=1:numel(handles.joints)
+for i=1:numel(handles.openRaveJoints.all)
     temp(:,i) = smooth(temp(:,i));
 end
 % Upsample from 10Hz to 100Hz.
@@ -176,9 +198,15 @@ function timer_Callback(obj, event, hObject)
 %disp(handles)
 % Load global values.
 handles = guidata(hObject);
+% Return if dance has not bee loaded yet.
+if ~hasfield(handles,'minorFrames')
+    return
+end
+% Play movie
 if handles.playing
     gotoFrame(hObject, handles.currentFrame + 1);
     handles = guidata(hObject);
+    % Stop movie if it reaches the end.
     if handles.currentFrame == size(handles.minorFrames, 1)
         handles.playing = 0;
     end
@@ -196,7 +224,26 @@ end
 handles.currentFrame = frameNumber;
 % Update frame text display
 set(handles.MinorFrame,'String',num2str(handles.currentFrame));
-set(handles.MajorFrame,'String',num2str(floor(handles.currentFrame/10)));
+set(handles.MajorFrame,'String',num2str(MinorToMajorFrame(handles.currentFrame)));
+
+
+% Array :  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21
+% Joints: WST LHY LHR LHP LKN LAP LAR RHY RHR RHP RKN RAP RAR LSP LSR LSY LEB RSP RSR RSY REB
+handles.openRaveJoints.all = [ 5, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,  9, 10, 11, 12, 16, 17, 18, 19];
+
+% Display joint angles
+% TODO: Waist
+%set(handles.LSPA,'String',num2str(handles.MinorFrames(frameNumber,19);
+% Left arm
+set(handles.LSPA,'String',num2str(handles.minorFrames(frameNumber,14)));
+set(handles.LSRA,'String',num2str(handles.minorFrames(frameNumber,15)));
+set(handles.LSYA,'String',num2str(handles.minorFrames(frameNumber,16)));
+set(handles.LEBA,'String',num2str(handles.minorFrames(frameNumber,17)));
+% Right arm
+set(handles.RSPA,'String',num2str(handles.minorFrames(frameNumber,18)));
+set(handles.RSRA,'String',num2str(handles.minorFrames(frameNumber,19)));
+set(handles.RSYA,'String',num2str(handles.minorFrames(frameNumber,20)));
+set(handles.REBA,'String',num2str(handles.minorFrames(frameNumber,21)));
 guidata(hObject, handles);
 updateOpenRAVE(hObject);
 
@@ -205,7 +252,7 @@ function [handles] = updateOpenRAVE(hObject)
 handles = guidata(hObject);
 % Update OpenRAVE model
 angles = handles.minorFrames(handles.currentFrame,:).*pi/180;
-orBodySetJointValues(handles.robotID,angles,handles.joints);
+orBodySetJointValues(handles.robotID,angles,handles.openRaveJoints.all);
 guidata(hObject, handles);
 
 %%
@@ -217,11 +264,10 @@ function GoTo_Callback(hObject, eventdata, handles)
 frame = str2num(get(handles.MajorFrame,'String'));
 if numel(frame) == 0
     msgbox('Not recognized as a number.')
-    set(handles.MajorFrame,'String',num2str(floor(handles.currentFrame/10)));
     guidata(hObject,handles);
     return
 end
-gotoFrame(hObject,frame*10)
+gotoFrame(hObject,MajorToMinorFrame(frame))
 
 
 function MajorFrame_Callback(hObject, eventdata, handles)
@@ -277,7 +323,7 @@ function PrevMajorFrame_Callback(hObject, eventdata, handles)
 % hObject    handle to PrevMajorFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-gotoFrame(hObject, 10*floor(handles.currentFrame/10 - 1));
+gotoFrame(hObject, MajorToMinorFrame(MinorToMajorFrame(handles.currentFrame)-1));
 
 % --- Executes on button press in PrevMinorFrame.
 function PrevMinorFrame_Callback(hObject, eventdata, handles)
@@ -306,8 +352,7 @@ function NextMajorFrame_Callback(hObject, eventdata, handles)
 % hObject    handle to NextMajorFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-gotoFrame(hObject, 10*floor(handles.currentFrame/10 + 1));
-
+gotoFrame(hObject, MajorToMinorFrame(MinorToMajorFrame(handles.currentFrame) + 1));
 
 
 
@@ -485,6 +530,9 @@ function LSRA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of LSRA as text
 %        str2double(get(hObject,'String')) returns contents of LSRA as a double
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.LSR);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -508,6 +556,9 @@ function LSYA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of LSYA as text
 %        str2double(get(hObject,'String')) returns contents of LSYA as a double
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.LSY);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -531,7 +582,9 @@ function LEBA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of LEBA as text
 %        str2double(get(hObject,'String')) returns contents of LEBA as a double
-
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.LEB);
 
 % --- Executes during object creation, after setting all properties.
 function LEBA_CreateFcn(hObject, eventdata, handles)
@@ -555,7 +608,9 @@ function RSPA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of RSPA as text
 %        str2double(get(hObject,'String')) returns contents of RSPA as a double
-
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.RSP);
 
 % --- Executes during object creation, after setting all properties.
 function RSPA_CreateFcn(hObject, eventdata, handles)
@@ -578,7 +633,9 @@ function RSRA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of RSRA as text
 %        str2double(get(hObject,'String')) returns contents of RSRA as a double
-
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.RSR);
 
 % --- Executes during object creation, after setting all properties.
 function RSRA_CreateFcn(hObject, eventdata, handles)
@@ -601,7 +658,9 @@ function RSYA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of RSYA as text
 %        str2double(get(hObject,'String')) returns contents of RSYA as a double
-
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.RSY);
 
 % --- Executes during object creation, after setting all properties.
 function RSYA_CreateFcn(hObject, eventdata, handles)
@@ -624,7 +683,9 @@ function REBA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of REBA as text
 %        str2double(get(hObject,'String')) returns contents of REBA as a double
-
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.REB);
 
 % --- Executes during object creation, after setting all properties.
 function REBA_CreateFcn(hObject, eventdata, handles)
@@ -926,3 +987,17 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 delete(timerfindall());
 % Hint: delete(hObject) closes the figure
 delete(hObject);
+
+
+
+function LSPA_Callback(hObject, eventdata, handles)
+% hObject    handle to LSPA (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of LSPA as text
+%        str2double(get(hObject,'String')) returns contents of LSPA as a double
+angle = str2double(get(hObject,'String'));
+angle = angle.*pi/180;
+orBodySetJointValues(handles.robotID,angle,handles.openRaveJoints.LSP);
+
