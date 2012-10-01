@@ -225,6 +225,9 @@ guidata(hObject, handles);
 % --- The function that calls the function makes the animation
 function gotoFrame(hObject, frameNumber)
 handles = guidata(hObject);
+if ~hasfield(handles,'minorFrames')
+    return;
+end
 if frameNumber < 1
     frameNumber = 1;
 elseif frameNumber > size(handles.minorFrames, 1)
